@@ -1,0 +1,58 @@
+
+import os
+os.chdir(os.path.abspath(os.path.dirname(__file__)))
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.optimize import curve_fit
+from scipy.integrate import trapezoid
+
+#데이터 읽어들이기
+bins,count=[],[]
+
+with open("hist2.csv","r") as f:
+    for line in f.readlines():
+        _b,_c=[float(i) for i in line.split(",")]
+        bins.append(_b)
+        count.append(_c)
+
+#모델 함수: 가우시안
+def particle(x,a,b,c):
+    return a * np.exp(-((x-b)**2)/(2*c**2))
+
+#두 입자의 함수
+def total(x,a,b,c,d,e,f):
+    return particle(x,a,b,c)+particle(x,d,e,f)
+
+#피팅
+coef,cov=curve_fit(total,bins,count,p0=[1000,1,0.2,500,2,0.5])
+
+#그래프 계산
+x=np.linspace(0,4,1000)
+
+y1=particle(x,coef[0],coef[1],coef[2])
+y2=particle(x,coef[3],coef[4],coef[5])
+
+#적분
+A=trapezoid(y1,x)
+B=trapezoid(y2,x)
+
+print("A =",A)
+print("B =",B)
+print("A:B =",A/B,":1")
+
+
+#그래프 그리기
+plt.bar(bins,count,width=0.09,align='edge',color='lightblue',label='Data')
+
+plt.plot(x,y1,"r--",label="Particle A")
+plt.plot(x,y2,"b--",label="Particle B")
+plt.plot(x,y1+y2,"k-",label="Total")
+
+plt.xlim(0,4)
+plt.xlabel("Energy")
+plt.ylabel("Count")
+plt.title("Energy Spectrum")
+plt.legend()
+plt.grid()
+plt.show()
